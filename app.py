@@ -65,7 +65,7 @@ def callback():
     <button type="submit">Verify</button>
 </form>
 """
-    @app.route("/verify", methods=["POST"])
+@app.route("/verify", methods=["POST"])
 def verify():
     insta_username = request.form.get("insta")
 
