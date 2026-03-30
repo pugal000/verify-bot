@@ -106,7 +106,7 @@ def check():
     res = requests.get(url, headers=headers)
 
     if code in res.text:
-        BOT_TOKEN = "BOT_TOKEN"
+        BOT_TOKEN = os.environ.get("BOT_TOKEN")
         GUILD_ID = "1484761131657723934"
         ROLE_ID = "1487321755151503500"
 
