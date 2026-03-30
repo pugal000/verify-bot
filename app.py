@@ -107,6 +107,7 @@ def check():
 
     if code in res.text:
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
+        print("BOT TOKEN:", BOT_TOKEN)
         GUILD_ID = "1484761131657723934"
         ROLE_ID = "1487321755151503500"
 
