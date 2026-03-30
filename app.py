@@ -58,7 +58,12 @@ def callback():
     user_json = user_response.json()
     username = user_json.get("username", "Unknown")
 
-    return f"Logged in as {username}"
-
+    return f"""
+<h2>Welcome {username}</h2>
+<form action="/verify" method="post">
+    <input type="text" name="insta" placeholder="Enter Instagram username" required>
+    <button type="submit">Verify</button>
+</form>
+"""
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
