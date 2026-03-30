@@ -23,8 +23,8 @@ def callback():
     code = request.args.get("code")
 
     data = {
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET,
+        'client_id': "1487522795113156769",
+        'client_secret': "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R",
         'grant_type': 'authorization_code',
         'code': code,
         'redirect_uri': REDIRECT_URI
