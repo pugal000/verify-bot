@@ -57,10 +57,13 @@ def callback():
 
     user_json = user_response.json()
     username = user_json.get("username", "Unknown")
+    user_id = user_json.get("id")
 
     return f"""
 <h2>Welcome {username}</h2>
+
 <form action="/verify" method="post">
+    <input type="hidden" name="user_id" value="{user_id}">
     <input type="text" name="insta" placeholder="Enter Instagram username" required>
     <button type="submit">Verify</button>
 </form>
@@ -70,6 +73,7 @@ import random
 @app.route("/verify", methods=["POST"])
 def verify():
     insta_username = request.form.get("insta")
+    user_id = request.form.get("user_id")
 
     # generate random code
     code = str(random.randint(100000, 999999))
@@ -83,6 +87,7 @@ def verify():
 <form action="/check" method="post">
     <input type="hidden" name="insta" value="{insta_username}">
     <input type="hidden" name="code" value="{code}">
+    <input type="hidden" name="user_id" value="{user_id}">
     <button type="submit">Check Verification</button>
 </form>
 """
@@ -90,6 +95,7 @@ def verify():
 def check():
     insta_username = request.form.get("insta")
     code = request.form.get("code")
+    user_id = request.form.get("user_id")
 
     url = f"https://www.instagram.com/{insta_username}/"
 
@@ -100,9 +106,24 @@ def check():
     res = requests.get(url, headers=headers)
 
     if code in res.text:
-        return "✅ VERIFIED SUCCESSFULLY!"
+    BOT_TOKEN = "MTQ4NzUyMjc5NTExMzE1Njc2OQ.GnswoZ.QfQm64u7QLfmjAl6vKCD9DwAzTDW85aVo_U4hU"
+    GUILD_ID = "1484761131657723934"
+    ROLE_ID = "<@&1487321755151503500>"
+
+    url = f"https://discord.com/api/guilds/{GUILD_ID}/members/{user_id}/roles/{ROLE_ID}"
+
+    headers = {
+        "Authorization": f"Bot {BOT_TOKEN}"
+    }
+
+    response = requests.put(url, headers=headers)
+
+    if response.status_code == 204:
+        return "✅ VERIFIED & ROLE GIVEN!"
     else:
-        return "❌ Code not found in bio. Try again."
+        return f"❌ Verified but role failed: {response.text}"
+else:
+    return "❌ Code not found in bio. Try again."
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
