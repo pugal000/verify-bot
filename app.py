@@ -1,1 +1,41 @@
 
+from flask import Flask, redirect, request
+import requests
+import os
+
+app = Flask(__name__)
+
+CLIENT_ID = "PASTE_CLIENT_ID"
+CLIENT_SECRET = "PASTE_CLIENT_SECRET"
+REDIRECT_URI = "https://verify-bot-production.up.railway.app/callback"
+
+@app.route("/")
+def home():
+    return '<a href="/login">Login with Discord</a>'
+
+@app.route("/login")
+def login():
+    url = f"https://discord.com/api/oauth2/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&response_type=code&scope=identify"
+    return redirect(url)
+
+@app.route("/callback")
+def callback():
+    code = request.args.get("code")
+
+    data = {
+        'client_id': CLIENT_ID,
+        'client_secret': CLIENT_SECRET,
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': REDIRECT_URI
+    }
+
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+
+    token = requests.post('https://discord.com/api/oauth2/token', data=data, headers=headers).json()
+
+    access_token = token.get('access_token')
+
+    user = requests.get(
+        'https://discord.com/api/users/@me',
+        headers={'
