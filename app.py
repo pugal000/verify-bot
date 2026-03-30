@@ -65,5 +65,11 @@ def callback():
     <button type="submit">Verify</button>
 </form>
 """
+    @app.route("/verify", methods=["POST"])
+def verify():
+    insta_username = request.form.get("insta")
+
+    return f"Checking Instagram for {insta_username}..."
+    
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
