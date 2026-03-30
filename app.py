@@ -4,8 +4,8 @@ import os
 
 app = Flask(__name__)
 
-CLIENT_ID = "PASTE_YOUR_CLIENT_ID"
-CLIENT_SECRET = "PASTE_YOUR_CLIENT_SECRET"
+CLIENT_ID = "1487522795113156769"
+CLIENT_SECRET = "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R"
 REDIRECT_URI = "https://verify-bot-production.up.railway.app/callback"
 
 @app.route("/")
@@ -28,8 +28,8 @@ def callback():
     code = request.args.get("code")
 
     data = {
-        "client_id": "1487522795113156769",
-        "client_secret": "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R",
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": REDIRECT_URI
