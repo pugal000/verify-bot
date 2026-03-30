@@ -65,11 +65,44 @@ def callback():
     <button type="submit">Verify</button>
 </form>
 """
+import random
+
 @app.route("/verify", methods=["POST"])
 def verify():
     insta_username = request.form.get("insta")
 
-    return f"Checking Instagram for {insta_username}..."
+    # generate random code
+    code = str(random.randint(100000, 999999))
+
+    return f"""
+<h3>Verification Step</h3>
+<p>Put this code in your Instagram bio:</p>
+<h2>{code}</h2>
+<p>Then click below to check</p>
+
+<form action="/check" method="post">
+    <input type="hidden" name="insta" value="{insta_username}">
+    <input type="hidden" name="code" value="{code}">
+    <button type="submit">Check Verification</button>
+</form>
+"""
+@app.route("/check", methods=["POST"])
+def check():
+    insta_username = request.form.get("insta")
+    code = request.form.get("code")
+
+    url = f"https://www.instagram.com/{insta_username}/"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    res = requests.get(url, headers=headers)
+
+    if code in res.text:
+        return "✅ VERIFIED SUCCESSFULLY!"
+    else:
+        return "❌ Code not found in bio. Try again."
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
