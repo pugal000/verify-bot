@@ -1,14 +1,30 @@
 from flask import Flask, redirect, request
 import requests
 import os
+import json
 import random
 
 app = Flask(__name__)
 
+# ------------------ DATABASE ------------------
+DB_FILE = "verified.json"
+
+def load_db():
+    if not os.path.exists(DB_FILE):
+        return {}
+    with open(DB_FILE, "r") as f:
+        return json.load(f)
+
+def save_db(data):
+    with open(DB_FILE, "w") as f:
+        json.dump(data, f)
+
+# ------------------ DISCORD CONFIG ------------------
 CLIENT_ID = "1487522795113156769"
-CLIENT_SECRET = "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R"
+CLIENT_SECRET = "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R"  # ⚠️ replace
 REDIRECT_URI = "https://verify-bot-production.up.railway.app/callback"
 
+# ------------------ ROUTES ------------------
 @app.route("/")
 def home():
     return '<a href="/login">Login with Discord</a>'
@@ -40,33 +56,31 @@ def callback():
         "Content-Type": "application/x-www-form-urlencoded"
     }
 
-    token_response = requests.post(
+    token = requests.post(
         "https://discord.com/api/oauth2/token",
         data=data,
         headers=headers
-    )
+    ).json()
 
-    token_json = token_response.json()
-    access_token = token_json.get("access_token")
+    access_token = token.get("access_token")
 
-    user_response = requests.get(
+    user = requests.get(
         "https://discord.com/api/users/@me",
         headers={"Authorization": f"Bearer {access_token}"}
-    )
+    ).json()
 
-    user_json = user_response.json()
-    username = user_json.get("username", "Unknown")
-    user_id = user_json.get("id")
+    username = user.get("username", "Unknown")
+    user_id = user.get("id")
 
     return f"""
-    <h2>Welcome {username}</h2>
+<h2>Welcome {username}</h2>
 
-    <form action="/verify" method="post">
-        <input type="hidden" name="user_id" value="{user_id}">
-        <input type="text" name="insta" placeholder="Enter Instagram username" required>
-        <button type="submit">Verify</button>
-    </form>
-    """
+<form action="/verify" method="post">
+    <input type="hidden" name="user_id" value="{user_id}">
+    <input type="text" name="insta" placeholder="Enter Instagram username" required>
+    <button type="submit">Verify</button>
+</form>
+"""
 
 @app.route("/verify", methods=["POST"])
 def verify():
@@ -76,45 +90,51 @@ def verify():
     code = str(random.randint(100000, 999999))
 
     return f"""
-    <h3>Verification Step</h3>
-    <p>Put this code in your Instagram bio:</p>
-    <h2>{code}</h2>
+<h3>Verification Step</h3>
+<p>Put this code in your Instagram bio:</p>
+<h2>{code}</h2>
 
-    <form action="/check" method="post">
-        <input type="hidden" name="insta" value="{insta_username}">
-        <input type="hidden" name="code" value="{code}">
-        <input type="hidden" name="user_id" value="{user_id}">
-        <button type="submit">Check Verification</button>
-    </form>
-    """
+<form action="/check" method="post">
+    <input type="hidden" name="insta" value="{insta_username}">
+    <input type="hidden" name="code" value="{code}">
+    <input type="hidden" name="user_id" value="{user_id}">
+    <button type="submit">Check Verification</button>
+</form>
+"""
 
 @app.route("/check", methods=["POST"])
 def check():
-    insta_username = request.form.get("insta").strip().lower()
+    insta_username = request.form.get("insta")
     code = request.form.get("code")
     user_id = request.form.get("user_id")
 
-    url = f"https://www.instagram.com/{insta_username}/?__a=1&__d=dis"
+    url = f"https://www.instagram.com/{insta_username}/"
 
     headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept-Language": "en-US,en;q=0.9"
     }
 
-    try:
-        res = requests.get(url, headers=headers)
-        data = res.json()
+    res = requests.get(url, headers=headers)
 
-        bio = data["graphql"]["user"]["biography"].lower()
+    html = res.text.lower()
+    code_lower = code.lower()
 
-        print("BIO:", bio)
-        print("CODE:", code.lower())
+    print("HTML CHECK:", code_lower in html)
+    print("CODE:", code_lower)
 
-    except Exception as e:
-        return f"❌ Instagram blocked request: {e}"
+    if code and code_lower in html:
 
-    # ✅ check
-    if code and code.lower() in bio:
+        db = load_db()
+
+        # 🔒 Duplicate protection
+        if insta_username in db:
+            if db[insta_username] != user_id:
+                return "❌ This Instagram is already linked to another Discord account."
+
+        # 💾 Save
+        db[insta_username] = user_id
+        save_db(db)
 
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
         GUILD_ID = "1484761131657723934"
@@ -136,5 +156,6 @@ def check():
     else:
         return "❌ Code not found in bio. Try again."
 
+# ------------------ RUN ------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
