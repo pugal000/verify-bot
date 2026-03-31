@@ -2,7 +2,11 @@ from flask import Flask, redirect, request
 import requests
 import os
 import json
+import random
 
+app = Flask(__name__)
+
+# ------------------ DATABASE ------------------
 DB_FILE = "verified.json"
 
 def load_db():
@@ -15,12 +19,12 @@ def save_db(data):
     with open(DB_FILE, "w") as f:
         json.dump(data, f)
 
-app = Flask(__name__)
-
+# ------------------ DISCORD CONFIG ------------------
 CLIENT_ID = "1487522795113156769"
-CLIENT_SECRET = "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R"
+CLIENT_SECRET = "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R"  # ⚠️ replace
 REDIRECT_URI = "https://verify-bot-production.up.railway.app/callback"
 
+# ------------------ ROUTES ------------------
 @app.route("/")
 def home():
     return '<a href="/login">Login with Discord</a>'
@@ -52,25 +56,21 @@ def callback():
         "Content-Type": "application/x-www-form-urlencoded"
     }
 
-    token_response = requests.post(
+    token = requests.post(
         "https://discord.com/api/oauth2/token",
         data=data,
         headers=headers
-    )
+    ).json()
 
-    token_json = token_response.json()
-    access_token = token_json.get("access_token")
+    access_token = token.get("access_token")
 
-    user_response = requests.get(
+    user = requests.get(
         "https://discord.com/api/users/@me",
-        headers={
-            "Authorization": f"Bearer {access_token}"
-        }
-    )
+        headers={"Authorization": f"Bearer {access_token}"}
+    ).json()
 
-    user_json = user_response.json()
-    username = user_json.get("username", "Unknown")
-    user_id = user_json.get("id")
+    username = user.get("username", "Unknown")
+    user_id = user.get("id")
 
     return f"""
 <h2>Welcome {username}</h2>
@@ -81,21 +81,18 @@ def callback():
     <button type="submit">Verify</button>
 </form>
 """
-import random
 
 @app.route("/verify", methods=["POST"])
 def verify():
     insta_username = request.form.get("insta")
     user_id = request.form.get("user_id")
 
-    # generate random code
     code = str(random.randint(100000, 999999))
 
     return f"""
 <h3>Verification Step</h3>
 <p>Put this code in your Instagram bio:</p>
 <h2>{code}</h2>
-<p>Then click below to check</p>
 
 <form action="/check" method="post">
     <input type="hidden" name="insta" value="{insta_username}">
@@ -104,6 +101,7 @@ def verify():
     <button type="submit">Check Verification</button>
 </form>
 """
+
 @app.route("/check", methods=["POST"])
 def check():
     insta_username = request.form.get("insta")
@@ -113,30 +111,28 @@ def check():
     url = f"https://www.instagram.com/{insta_username}/"
 
     headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept-Language": "en-US,en;q=0.9"
     }
 
-    try:
-        res = requests.get(url + "?__a=1&__d=dis", headers=headers)
-        data = res.json()
+    res = requests.get(url, headers=headers)
 
-        bio = data["graphql"]["user"]["biography"]
+    html = res.text.lower()
+    code_lower = code.lower()
 
-        print("BIO:", bio)
-        print("CODE:", code)
+    print("HTML CHECK:", code_lower in html)
+    print("CODE:", code_lower)
 
-    except Exception as e:
-        return f"❌ Instagram fetch failed: {e}"
-
-    if code and code in bio:
+    if code and code_lower in html:
 
         db = load_db()
 
+        # 🔒 Duplicate protection
         if insta_username in db:
             if db[insta_username] != user_id:
                 return "❌ This Instagram is already linked to another Discord account."
 
+        # 💾 Save
         db[insta_username] = user_id
         save_db(db)
 
@@ -144,13 +140,13 @@ def check():
         GUILD_ID = "1484761131657723934"
         ROLE_ID = "1487321755151503500"
 
-        url = f"https://discord.com/api/guilds/{GUILD_ID}/members/{user_id}/roles/{ROLE_ID}"
+        role_url = f"https://discord.com/api/guilds/{GUILD_ID}/members/{user_id}/roles/{ROLE_ID}"
 
         headers = {
             "Authorization": f"Bot {BOT_TOKEN}"
         }
 
-        response = requests.put(url, headers=headers)
+        response = requests.put(role_url, headers=headers)
 
         if response.status_code == 204:
             return "✅ VERIFIED & ROLE GIVEN!"
@@ -159,6 +155,7 @@ def check():
 
     else:
         return "❌ Code not found in bio. Try again."
-    
+
+# ------------------ RUN ------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
