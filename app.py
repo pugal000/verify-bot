@@ -110,38 +110,40 @@ def check():
 
     url = f"https://www.instagram.com/{insta_username}/"
 
+    # 🔥 Strong session to avoid blocking
+    session = requests.Session()
     headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept-Language": "en-US,en;q=0.9"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Connection": "keep-alive"
     }
 
-    res = requests.get(url, headers=headers)
+    res = session.get(url, headers=headers)
 
     html = res.text.lower()
     code_lower = code.lower()
 
-    print("HTML CHECK:", code_lower in html)
+    print("HTML LENGTH:", len(html))
     print("CODE:", code_lower)
 
+    # 🔍 Check code in page
     if code and code_lower in html:
 
         db = load_db()
 
         # 🔒 Duplicate protection
         if insta_username in db:
-
-            # same user
             if db[insta_username] == user_id:
                 return "✅ Already verified!"
-
-            # different user
             else:
                 return "❌ This Instagram is already linked to another Discord account."
 
-        # 💾 Save new user
+        # 💾 Save new verification
         db[insta_username] = user_id
         save_db(db)
 
+        # 🎯 Give Discord role
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
         GUILD_ID = "1484761131657723934"
         ROLE_ID = "1487321755151503500"
