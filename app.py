@@ -1,6 +1,19 @@
 from flask import Flask, redirect, request
 import requests
 import os
+import json
+
+DB_FILE = "verified.json"
+
+def load_db():
+    if not os.path.exists(DB_FILE):
+        return {}
+    with open(DB_FILE, "r") as f:
+        return json.load(f)
+
+def save_db(data):
+    with open(DB_FILE, "w") as f:
+        json.dump(data, f)
 
 app = Flask(__name__)
 
@@ -100,10 +113,10 @@ def check():
     url = f"https://www.instagram.com/{insta_username}/"
 
     headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-    "Accept": "text/html,application/xhtml+xml",
-    "Accept-Language": "en-US,en;q=0.9"
-}
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9"
+    }
 
     res = requests.get(url, headers=headers)
     
@@ -111,6 +124,18 @@ def check():
     print("FOUND:", code in res.text)
 
     if code and code.lower() in res.text.lower():
+
+        db = load_db()
+
+        # check if insta already used
+        if insta_username in db:
+            if db[insta_username] != user_id:
+                return "❌ This Instagram is already linked to another Discord account."
+
+        # save new verification
+        db[insta_username] = user_id
+        save_db(db)
+
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
         GUILD_ID = "1484761131657723934"
         ROLE_ID = "1487321755151503500"
@@ -127,9 +152,9 @@ def check():
             return "✅ VERIFIED & ROLE GIVEN!"
         else:
             return f"❌ Verified but role failed: {response.text}"
+
     else:
         return "❌ Code not found in bio. Try again."
-
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
