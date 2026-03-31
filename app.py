@@ -21,7 +21,7 @@ def save_db(data):
 
 # ------------------ DISCORD CONFIG ------------------
 CLIENT_ID = "1487522795113156769"
-CLIENT_SECRET = "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R"  # 🔴 REPLACE THIS
+CLIENT_SECRET = "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R"  # ⚠️ replace
 REDIRECT_URI = "https://verify-bot-production.up.railway.app/callback"
 
 # ------------------ ROUTES ------------------
@@ -104,46 +104,38 @@ def verify():
 
 @app.route("/check", methods=["POST"])
 def check():
-    insta_username = request.form.get("insta").strip().lower()
+    insta_username = request.form.get("insta")
     code = request.form.get("code")
     user_id = request.form.get("user_id")
 
-    url = f"https://i.instagram.com/api/v1/users/web_profile_info/?username={insta_username}"
+    url = f"https://www.instagram.com/{insta_username}/"
 
     headers = {
-        "User-Agent": "Instagram 155.0.0.37.107",
-        "Accept": "*/*"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept-Language": "en-US,en;q=0.9"
     }
 
-    try:
-        res = requests.get(url, headers=headers)
-        data = res.json()
+    res = requests.get(url, headers=headers)
 
-        bio = data["data"]["user"]["biography"].lower()
+    html = res.text.lower()
+    code_lower = code.lower()
 
-        print("BIO:", bio)
-        print("CODE:", code.lower())
+    print("HTML CHECK:", code_lower in html)
+    print("CODE:", code_lower)
 
-    except Exception as e:
-        return f"❌ Instagram blocked request: {e}"
-
-    # ✅ check
-    if code and code.lower() in bio:
+    if code and code_lower in html:
 
         db = load_db()
 
-        # 🔒 duplicate
+        # 🔒 Duplicate protection
         if insta_username in db:
-            if db[insta_username] == user_id:
-                return "✅ Already verified!"
-            else:
+            if db[insta_username] != user_id:
                 return "❌ This Instagram is already linked to another Discord account."
 
-        # 💾 save
+        # 💾 Save
         db[insta_username] = user_id
         save_db(db)
 
-        # 🎯 role
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
         GUILD_ID = "1484761131657723934"
         ROLE_ID = "1487321755151503500"
@@ -163,7 +155,6 @@ def check():
 
     else:
         return "❌ Code not found in bio. Try again."
-
 
 # ------------------ RUN ------------------
 if __name__ == "__main__":
