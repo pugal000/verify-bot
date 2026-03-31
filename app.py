@@ -108,42 +108,42 @@ def check():
     code = request.form.get("code")
     user_id = request.form.get("user_id")
 
-    url = f"https://www.instagram.com/{insta_username}/"
+    url = f"https://i.instagram.com/api/v1/users/web_profile_info/?username={insta_username}"
 
-    # 🔥 Strong session to avoid blocking
-    session = requests.Session()
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Connection": "keep-alive"
+        "User-Agent": "Instagram 155.0.0.37.107",
+        "Accept": "*/*"
     }
 
-    res = session.get(url, headers=headers)
+    try:
+        res = requests.get(url, headers=headers)
+        data = res.json()
 
-    html = res.text.lower()
-    code_lower = code.lower()
+        bio = data["data"]["user"]["biography"].lower()
 
-    print("HTML LENGTH:", len(html))
-    print("CODE:", code_lower)
+        print("BIO:", bio)
+        print("CODE:", code.lower())
 
-    # 🔍 Check code in page
-    if code and code_lower in html:
+    except Exception as e:
+        return f"❌ Instagram blocked request: {e}"
+
+    # ✅ check
+    if code and code.lower() in bio:
 
         db = load_db()
 
-        # 🔒 Duplicate protection
+        # 🔒 duplicate
         if insta_username in db:
             if db[insta_username] == user_id:
                 return "✅ Already verified!"
             else:
                 return "❌ This Instagram is already linked to another Discord account."
 
-        # 💾 Save new verification
+        # 💾 save
         db[insta_username] = user_id
         save_db(db)
 
-        # 🎯 Give Discord role
+        # 🎯 role
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
         GUILD_ID = "1484761131657723934"
         ROLE_ID = "1487321755151503500"
@@ -163,6 +163,7 @@ def check():
 
     else:
         return "❌ Code not found in bio. Try again."
+
 
 # ------------------ RUN ------------------
 if __name__ == "__main__":
