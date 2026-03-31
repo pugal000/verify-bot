@@ -100,12 +100,17 @@ def check():
     url = f"https://www.instagram.com/{insta_username}/"
 
     headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Accept": "text/html,application/xhtml+xml",
+    "Accept-Language": "en-US,en;q=0.9"
+}
 
     res = requests.get(url, headers=headers)
+    
+    print("CODE:", code)
+    print("FOUND:", code in res.text)
 
-    if code in res.text:
+    if code and code.lower() in res.text.lower():
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
         GUILD_ID = "1484761131657723934"
         ROLE_ID = "1487321755151503500"
