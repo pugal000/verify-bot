@@ -107,9 +107,8 @@ def check():
 
     if code in res.text:
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
-        print("BOT TOKEN:", BOT_TOKEN)
-        GUILD_ID = "1484761131657723934"
-        ROLE_ID = "1487321755151503500"
+        GUILD_ID = "YOUR_SERVER_ID"
+        ROLE_ID = "YOUR_ROLE_ID"
 
         url = f"https://discord.com/api/guilds/{GUILD_ID}/members/{user_id}/roles/{ROLE_ID}"
 
@@ -125,6 +124,7 @@ def check():
             return f"❌ Verified but role failed: {response.text}"
     else:
         return "❌ Code not found in bio. Try again."
+
     
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
