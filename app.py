@@ -21,7 +21,7 @@ def save_db(data):
 
 # ------------------ DISCORD CONFIG ------------------
 CLIENT_ID = "1487522795113156769"
-CLIENT_SECRET = "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R"  # ⚠️ replace
+CLIENT_SECRET = "zPDmxrScuQXF24tlwwkcEENMs6ec_D4R"  # 🔴 REPLACE THIS
 REDIRECT_URI = "https://verify-bot-production.up.railway.app/callback"
 
 # ------------------ ROUTES ------------------
@@ -104,14 +104,14 @@ def verify():
 
 @app.route("/check", methods=["POST"])
 def check():
-    insta_username = request.form.get("insta")
+    insta_username = request.form.get("insta").strip().lower()
     code = request.form.get("code")
     user_id = request.form.get("user_id")
 
     url = f"https://www.instagram.com/{insta_username}/"
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "User-Agent": "Mozilla/5.0",
         "Accept-Language": "en-US,en;q=0.9"
     }
 
@@ -129,10 +129,16 @@ def check():
 
         # 🔒 Duplicate protection
         if insta_username in db:
-            if db[insta_username] != user_id:
+
+            # same user
+            if db[insta_username] == user_id:
+                return "✅ Already verified!"
+
+            # different user
+            else:
                 return "❌ This Instagram is already linked to another Discord account."
 
-        # 💾 Save
+        # 💾 Save new user
         db[insta_username] = user_id
         save_db(db)
 
