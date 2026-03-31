@@ -107,8 +107,8 @@ def check():
 
     if code in res.text:
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
-        GUILD_ID = "YOUR_SERVER_ID"
-        ROLE_ID = "YOUR_ROLE_ID"
+        GUILD_ID = "1484761131657723934"
+        ROLE_ID = "1487321755151503500"
 
         url = f"https://discord.com/api/guilds/{GUILD_ID}/members/{user_id}/roles/{ROLE_ID}"
 
