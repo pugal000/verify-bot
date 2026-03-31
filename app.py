@@ -90,23 +90,31 @@ def verify():
 
 @app.route("/check", methods=["POST"])
 def check():
-    insta_username = request.form.get("insta")
+    insta_username = request.form.get("insta").strip().lower()
     code = request.form.get("code")
     user_id = request.form.get("user_id")
 
-    url = f"https://www.instagram.com/{insta_username}/"
+    url = f"https://www.instagram.com/{insta_username}/?__a=1&__d=dis"
 
     headers = {
         "User-Agent": "Mozilla/5.0",
-        "Accept-Language": "en-US,en;q=0.9"
+        "Accept": "application/json"
     }
 
-    res = requests.get(url, headers=headers)
+    try:
+        res = requests.get(url, headers=headers)
+        data = res.json()
 
-    print("CODE:", code)
-    print("FOUND:", code.lower() in res.text.lower())
+        bio = data["graphql"]["user"]["biography"].lower()
 
-    if code and code.lower() in res.text.lower():
+        print("BIO:", bio)
+        print("CODE:", code.lower())
+
+    except Exception as e:
+        return f"❌ Instagram blocked request: {e}"
+
+    # ✅ check
+    if code and code.lower() in bio:
 
         BOT_TOKEN = os.environ.get("BOT_TOKEN")
         GUILD_ID = "1484761131657723934"
