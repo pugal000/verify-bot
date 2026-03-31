@@ -113,26 +113,30 @@ def check():
     url = f"https://www.instagram.com/{insta_username}/"
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Language": "en-US,en;q=0.9"
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
     }
 
-    res = requests.get(url, headers=headers)
-    
-    print("CODE:", code)
-    print("FOUND:", code in res.text)
+    try:
+        res = requests.get(url + "?__a=1&__d=dis", headers=headers)
+        data = res.json()
 
-    if code and code.lower() in res.text.lower():
+        bio = data["graphql"]["user"]["biography"]
+
+        print("BIO:", bio)
+        print("CODE:", code)
+
+    except Exception as e:
+        return f"❌ Instagram fetch failed: {e}"
+
+    if code and code in bio:
 
         db = load_db()
 
-        # check if insta already used
         if insta_username in db:
             if db[insta_username] != user_id:
                 return "❌ This Instagram is already linked to another Discord account."
 
-        # save new verification
         db[insta_username] = user_id
         save_db(db)
 
